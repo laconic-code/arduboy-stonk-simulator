@@ -276,7 +276,7 @@ inline bool isInGraph(int8_t point) {
 money_t getTotalAssetValue() {
     money_t total = 0;
     for (uint8_t i = 0; i < COMPANY_COUNT; ++i) {
-      Company_t* company = &gCompanies[gActiveCompany];
+      Company_t* company = &gCompanies[i];
       total += company->held * company->value;
     }
     total += gMoney;
