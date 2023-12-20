@@ -60,6 +60,9 @@
 //     OR 'stretch' it to fit.
 //
 // Wishlist:
+//   "AI" stockbroker that invests all your cash randomly
+//   Window showing small graphs of all stocks
+//   Window showing stock value 
 //   shrink graph and add value lines? would need to shift when graph goes up/dwn
 //   little +/- dollar amount that wafts slowly upwards on buy/sell
 //   different versions of text "panik" overlayed on dude while panicking
@@ -244,6 +247,7 @@ uint8_t gNewsTickerCounter;
 uint16_t gBuySellSubmenu;
 uint16_t gBuySellCount;
 uint8_t gResourceIndex;
+uint8_t gResourceView;
 Ticker gTicker;
 uint8_t gResetCounter;
 uint8_t gNewsCompanyIdx;
@@ -326,6 +330,7 @@ void setupGlobals() {
   gStonkMode = STONKMODE_GOOD;
   gActiveCompany = 0;
   gResourceIndex = 0;
+  gResourceView = RESOURCES_VIEW_CASH;
   gMoney = INITIAL_MONEY;
   gBuySellSubmenu = BUYSELL_MENU_ENTRY100;
   gBuySellCount = BUYSELL_MIN;
@@ -517,25 +522,52 @@ void drawResources() {
   // 6 companys and 2 money values can't fit on the same line
   // so sadly we are scrolling | or we can show the stock ticker above
   // and let the player page through them
-  uint8_t idx = gResourceIndex;
-  for (uint8_t i = 0; i < RESOURCEWIN_VISIBLE; ++i, ++idx) {
-    switch (idx) {
-      case 0:
-        snprintf(buff, len, "Csh %8s",
-          getMoneyAsString(gMoney, true));
-        break;
-      case 1: case 2: case 3: 
-      case 4: case 5: case 6: 
+  if (gResourceView == RESOURCES_VIEW_CASH) {
+    arduboy.setCursor(RESOURCEWIN_OFFSET_X+3, RESOURCEWIN_OFFSET_Y+4+(0*10));
+    arduboy.print("Cash:");
+
+    snprintf(buff, len, "  %10s", getMoneyAsString(gMoney, true));
+    arduboy.setCursor(RESOURCEWIN_OFFSET_X+3, RESOURCEWIN_OFFSET_Y+4+(1*10));
+    arduboy.print(buff);
+
+    arduboy.setCursor(RESOURCEWIN_OFFSET_X+3, RESOURCEWIN_OFFSET_Y+4+(2*10));
+    arduboy.print("Total:");
+
+    snprintf(buff, len, "  %10s", getMoneyAsString(getTotalAssetValue(), true));
+    arduboy.setCursor(RESOURCEWIN_OFFSET_X+3, RESOURCEWIN_OFFSET_Y+4+(3*10));
+    arduboy.print(buff);
+
+  } else if (gResourceView == RESOURCES_VIEW_HELD) {
+    uint8_t idx = gResourceIndex;
+    for (uint8_t i = 0; i < RESOURCEWIN_VISIBLE; ++i, ++idx) {
+      if (idx == 0) {
+        snprintf(buff, len, "Held:");
+      } else if (idx <= COMPANY_COUNT) {
         snprintf(buff, len, "%-4s   %5u",
           gCompanies[idx-1].name,
           gCompanies[idx-1].held);
+      } else {
         break;
-      case 7:
-        snprintf(buff, len, "Tot %8s",
-          getMoneyAsString(getTotalAssetValue(), true));
+      }
+      arduboy.setCursor(RESOURCEWIN_OFFSET_X+3, RESOURCEWIN_OFFSET_Y+4+(i*10));
+      arduboy.print(buff);
     }
-    arduboy.setCursor(RESOURCEWIN_OFFSET_X+3, RESOURCEWIN_OFFSET_Y+4+(i*10));
-    arduboy.print(buff);
+
+  } else if (gResourceView == RESOURCES_VIEW_VALUE) {
+    uint8_t idx = gResourceIndex;
+    for (uint8_t i = 0; i < RESOURCEWIN_VISIBLE; ++i, ++idx) {
+      if (idx == 0) {
+        snprintf(buff, len, "Value:");
+      } else if (idx <= COMPANY_COUNT) {
+        snprintf(buff, len, "%-4s %7s",
+          gCompanies[idx-1].name,
+          getMoneyAsString(gCompanies[idx-1].value, true));
+      } else {
+        break;
+      }
+      arduboy.setCursor(RESOURCEWIN_OFFSET_X+3, RESOURCEWIN_OFFSET_Y+4+(i*10));
+      arduboy.print(buff);
+    }
   }
 
   arduboy.drawRect(
@@ -907,6 +939,7 @@ void loopBuySell() {
 }
 
 void loopResources() {
+  updateGraph();
   updateNews();
   
   if (everyXFramesOrJustPressed(DOWN_BUTTON, FRAMERATE/4)) {
@@ -917,6 +950,14 @@ void loopResources() {
     gResourceIndex -=
       (gResourceIndex == 0)
       ? 0 : 1;
+  }
+
+  if (arduboy.justPressed(RIGHT_BUTTON)) {
+    gResourceView = (gResourceView == RESOURCES_VIEW_VALUE)
+      ? 0 : gResourceView + 1;
+  } else if (arduboy.justPressed(LEFT_BUTTON)) {
+    gResourceView = (gResourceView == 0)
+      ? RESOURCES_VIEW_VALUE : gResourceView - 1;
   }
 
   if (arduboy.justPressed(B_BUTTON) || arduboy.justPressed(A_BUTTON)) {
