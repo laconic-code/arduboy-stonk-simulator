@@ -25,7 +25,7 @@
 
 typedef int32_t money_t;
 
-#define VERSION "v1.0"
+#define VERSION "v1.0.2"
 //#define TESTING
 #define STONKMODE_GOOD      0
 #define STONKMODE_BAD       1

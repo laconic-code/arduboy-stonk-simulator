@@ -578,7 +578,7 @@ void drawResources() {
 }
 
 bool checkGameOver() {
-  if (getTotalAssetValue() > GAME_SUCCESS_ASSET_VALUE) {
+  if (gMoney >= GAME_SUCCESS_ASSET_VALUE) {
     gGameMode = GAMEMODE_GAMEOVER;
     return true;
   }
@@ -981,7 +981,8 @@ void loopGameOver() {
     arduboy.display();
   }
 
-  if (arduboy.justPressed(A_BUTTON)) {
+  if (arduboy.justPressed(B_BUTTON)) {
+    setupGlobals();
     gGameMode = GAMEMODE_TITLE;
     gTimer = 0;
   }
